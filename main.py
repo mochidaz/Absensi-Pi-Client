@@ -3,8 +3,11 @@ import cv2
 import numpy as np
 import _thread
 import time
+from datetime import datetime as dt
+import requests
+import os
 
-video_capture = cv2.VideoCapture(2)
+video_capture = cv2.VideoCapture(0)
 
 face_locations = []
 face_encodings = []
@@ -14,6 +17,19 @@ process_this_frame = True
 def wait(delay):
     time.sleep(delay)
     print("Hello world")
+
+def send(frame, encoding):
+
+    cv2.imwrite('/tmp/wajah.jpg',frame)
+    url = "http://192.168.43.23:5001"
+    try:
+        files = {"file":open("/tmp/wajah.jpg", 'rb')}
+        r = requests.post(url, files=files).json()
+        print(r)
+        encoding.clear()
+        os.remove("/tmp/wajah.jpg")
+    except FileNotFoundError:
+        pass
 
 while True:
     ret, frame = video_capture.read()
@@ -27,8 +43,8 @@ while True:
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
         if len(face_encodings) > 0:
-            _thread.start_new_thread(wait, (5,))
-            cv2.imwrite('/tmp/wajah.jpg',frame)
+            _thread.start_new_thread(send, (frame, face_encodings))
+
 
         face_names = []
         for face_encoding in face_encodings:
@@ -53,22 +69,9 @@ while True:
         cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
     cv2.imshow('Video', frame)
-    face_encodings.clear()
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
-from datetime import datetime as dt
-import requests
-
-
-url = "http://0.0.0.0:5001"
-files = {"file":open("/tmp/wajah.jpg", 'rb')}
-
-# POST request
-r = requests.post(url, files=files).json()
-
-print(r)
 
 video_capture.release()
 cv2.destroyAllWindows()

@@ -6,6 +6,8 @@ import time
 from datetime import datetime as dt
 import requests
 import os
+import requests
+import pyttsx3
 
 video_capture = cv2.VideoCapture(0)
 
@@ -13,23 +15,7 @@ face_locations = []
 face_encodings = []
 face_names = []
 process_this_frame = True
-
-def wait(delay):
-    time.sleep(delay)
-    print("Hello world")
-
-def send(frame, encoding):
-
-    cv2.imwrite('/tmp/wajah.jpg',frame)
-    url = "http://192.168.43.23:5001"
-    try:
-        files = {"file":open("/tmp/wajah.jpg", 'rb')}
-        r = requests.post(url, files=files).json()
-        print(r)
-        encoding.clear()
-        os.remove("/tmp/wajah.jpg")
-    except FileNotFoundError:
-        pass
+engine = pyttsx3.init()
 
 while True:
     ret, frame = video_capture.read()
@@ -41,10 +27,6 @@ while True:
     if process_this_frame:
         face_locations = face_recognition.face_locations(rgb_small_frame)
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
-        if len(face_encodings) > 0:
-            _thread.start_new_thread(send, (frame, face_encodings))
-
 
         face_names = []
         for face_encoding in face_encodings:
@@ -66,12 +48,31 @@ while True:
 
         cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
         font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
     cv2.imshow('Video', frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
+    elif cv2.waitKey(1) & 0xFF == ord('a'):
+        cv2.imwrite("/tmp/wajah.png", frame)
+
+        url = "http://0.0.0.0:5001"
+        files = {"file":open("/tmp/wajah.png", 'rb')}
+
+        # POST request
+        r = requests.post(url, files=files).json()
+
+        os.system(f"echo {r} >> test.json")
+
+        if r['NIS'] == 'Unkown':
+            os.system("espeak 'Mohon Ulangi kembali'")
+        else:
+            os.system("espeak 'Terima kasih, nis anda, {} telah diterima' ".format(r['NIS']))
+
+        print(r)
+
+
 
 video_capture.release()
 cv2.destroyAllWindows()

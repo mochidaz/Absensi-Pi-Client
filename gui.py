@@ -5,7 +5,7 @@ import time
 
 my_w = tk.Tk()
 my_w.geometry("800x600") 
-my_connect = psycopg2.connect("dbname=siswadb user=rahman")
+my_connect = psycopg2.connect("dbname=kehadiran user=pi")
 my_conn = my_connect.cursor()
 ####### end of connection ####
 while True:
@@ -13,7 +13,7 @@ while True:
     i=0 
     for student in my_conn: 
         for j in range(len(student)):
-            e = Entry(my_w, width=20, fg='white') 
+            e = Entry(my_w, width=20, fg='black') 
             e.grid(row=i, column=j) 
             e.insert(END, student[j])
         i=i+1

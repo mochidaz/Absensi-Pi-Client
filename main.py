@@ -8,7 +8,15 @@ import requests
 import os
 import requests
 import pyttsx3
+from database import Database
+from datetime import datetime as dt
+import busio
+import board
+import adafruit_amg88xx
+i2c = busio.I2C(board.SCL, board.SDA)
+amg = adafruit_amg88xx.AMG88XX(i2c)
 
+db = Database()
 video_capture = cv2.VideoCapture(0)
 
 face_locations = []
@@ -44,33 +52,55 @@ while True:
         bottom *= 4
         left *= 4
 
-        cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+        #cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
 
-        cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-        font = cv2.FONT_HERSHEY_DUPLEX
+        #cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+        #font = cv2.FONT_HERSHEY_DUPLEX
 
     cv2.imshow('Video', frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
 
-    elif cv2.waitKey(1) & 0xFF == ord('a'):
+    if cv2.waitKey(1) & 0xFF == ord('a'):
         cv2.imwrite("/tmp/wajah.png", frame)
 
-        url = "http://0.0.0.0:5001"
+        url = "http://192.168.6.201:5001"
         files = {"file":open("/tmp/wajah.png", 'rb')}
 
         # POST request
         r = requests.post(url, files=files).json()
-
-        os.system(f"echo {r} >> test.json")
-
-        if r['NIS'] == 'Unkown':
-            os.system("espeak 'Mohon Ulangi kembali'")
-        else:
-            os.system("espeak 'Terima kasih, nis anda, {} telah diterima' ".format(r['NIS']))
-
         print(r)
+        try:
+            #q = db.getAll(r['NIS'])
+            #print(q)
+            #arr = []
+            #count = 0
+            #for i in q[0]:
+            #    arr.append(i)
+            #print("Data diri: ", arr)
+
+            #nama = arr[0]
+            #kelas = arr[1]
+            #umur = arr[2]
+            #nis = arr[3]
+            #foto = arr[4]
+            nama = r['Nama']
+            kelas = r['Kelas']
+            nis = r['NIS']
+            timestamp = dt.now()
+
+            while 0.0 in amg.pixels[0]:
+                pass
+            else:
+                suhu = max(amg.pixels[0])
+            # Insert ke database Kehadiran
+            db.Kehadiran((nama, nis, kelas,suhu, timestamp))
+
+            os.system(f"echo {r} >> test.json")
+        except Exception as e:
+            continue
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 
 
